@@ -14,14 +14,13 @@ body {
 }
 
 header {
-  padding: 115px 0 32px 0;
+  padding: 65px 0 15px 0;
   background-color: #00bcd4;
   color: white;
 }
 
 main, header > h1 {
   padding: 0 16px;
-  max-width: 760px;
   box-sizing: border-box;
   margin: 0 auto;
 }
