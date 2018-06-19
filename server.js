@@ -48,8 +48,11 @@ let pushDb;
   
     // Validate subscription
   
-    pushDb.collection('subscription').insertOne(subscription, function(err, r) {
+    pushDb.collection('subscription').insertOne(subscription, 
+    (err, r) => {
       if(err) {
+        consola.error(err);
+        consola.debug(err);
         res.status(500);
       } else {
         res.status(201);
@@ -69,8 +72,10 @@ let pushDb;
   
     pushDb.collection('subscription').removeOne({ 
       endpoint: subscription.endpoint 
-    }, function(err, r) {
+    }, (err, r) => {
       if(err) {
+        consola.error(err);
+        consola.debug(err);
         res.status(500);
       } else {
         res.status(201);
@@ -108,6 +113,11 @@ let pushDb;
         
         pushDb.collection('subscription').removeOne({ 
           endpoint: subscription.endpoint 
+        }, (err) => {
+          if (err) {
+            consola.error(err);
+            consola.debug(err);
+          }
         });
   
       } else {
