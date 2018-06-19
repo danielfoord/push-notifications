@@ -78,11 +78,10 @@ let pushDb;
         consola.debug(err);
         res.status(500);
       } else {
-        res.status(201);
+        res.status(200);
       }
     });
   
-    res.status(200);
     res.end();
   });
   
