@@ -12,6 +12,51 @@ let _isSubscribed = false;
 let _swRegistration = null;
 let _isPushSupported = 'serviceWorker' in navigator && 'PushManager' in window;
 
+class PushApi {
+
+  async getPublicKey() {
+    return await fetch('/vapidPublicKey');
+  }
+
+  async subscribe(subscription) {
+    await fetch('/subscribe', {
+      method: 'post',
+      headers: {
+        'Content-type': 'application/json'
+      },
+      body: JSON.stringify({ subscription })
+    });
+  }
+
+  async unsubscribe(subscription) {
+    await fetch('/unsubscribe', {
+      method: 'post',
+      headers: {
+        'Content-type': 'application/json'
+      },
+      body: JSON.stringify({ subscription })
+    });
+  }
+
+  async sendMessage(message) {
+    await fetch('/message', {
+      method: 'post',
+      headers: {
+        'Content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        subscription: message.subscription,
+        title: message.title,
+        body: message.body,
+        url: message.url
+      }),
+    });
+  }
+
+}
+
+const _pushApi = new PushApi();
+
 (async () => {
   if (_isPushSupported) {
 
@@ -56,17 +101,11 @@ async function initializeUI() {
 
   _sendButton.addEventListener('click', async function() {
     _sendButton.disabled = true;
-    await fetch('/message', {
-      method: 'post',
-      headers: {
-        'Content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        subscription: _txtRecipientSubscription.value,
-        title: _txtTitle.value,
-        body: _txtBody.value,
-        url: _txtUrl.value
-      }),
+    await _pushApi.sendMessage({
+      subscription: _txtRecipientSubscription.value,
+      title: _txtTitle.value,
+      body: _txtBody.value,
+      url: _txtUrl.value
     });
     _sendButton.disabled = false;
   });
@@ -119,7 +158,7 @@ async function subscribeUser() {
   
   if (!_isSubscribed) {
     
-    const pubKeyRes = await fetch('/vapidPublicKey');
+    const pubKeyRes = await _pushApi.getPublicKey();
     const publicKey = await pubKeyRes.text();
     const applicationServerKey = urlB64ToUint8Array(publicKey);
 
@@ -132,15 +171,7 @@ async function subscribeUser() {
 
       console.debug('User is subscribed.');
 
-      await fetch('/subscribe', {
-        method: 'post',
-        headers: {
-          'Content-type': 'application/json'
-        },
-        body: JSON.stringify({
-          subscription: subscription
-        })
-      });
+      await _pushApi.subscribe(subscription);
 
       updateUI(subscription);     
       _isSubscribed = true;
@@ -161,18 +192,8 @@ async function unsubscribeUser() {
   
   try {
     if (subscription) {
-      
-      await fetch('/unsubscribe', {
-        method: 'post',
-        headers: {
-          'Content-type': 'application/json'
-        },
-        body: JSON.stringify({
-          subscription: subscription
-        })
-      });
-
-      return subscription.unsubscribe();
+      await _pushApi.unsubscribe(subscription);
+      await subscription.unsubscribe();
     }
   } catch (err) {
     console.error('Error unsubscribing', err);

@@ -111,6 +111,7 @@ let pushDb;
       
       // Make sure that we have no reference to an unregistered subscription 
       if (err.statusCode === 410) {
+        res.status(400);
         consola.warn('Trying to push to an unregistered subscription');
         await pushDb.collection('subscription').removeOne({ 
           endpoint: subscription.endpoint 
