@@ -1,119 +1,108 @@
 'use strict';
 
-const pushButton = document.querySelector('#btn-toggle-push');
-const sendButton = document.querySelector('#btn-send');
-const txtRecipientSubscription = document.querySelector('#txt-subscription');
-const txtTitle = document.querySelector('#txt-title');
-const txtBody = document.querySelector('#txt-body');
-const txtUrl = document.querySelector('#txt-url');
+const _pushButton = document.querySelector('#btn-toggle-push');
+const _sendButton = document.querySelector('#btn-send');
+const _txtRecipientSubscription = document.querySelector('#txt-subscription');
+const _txtTitle = document.querySelector('#txt-title');
+const _txtBody = document.querySelector('#txt-body');
+const _txtUrl = document.querySelector('#txt-url');
+const _snackbar = document.querySelector('#snackbar');
 
+let _isSubscribed = false;
+let _swRegistration = null;
+let _isPushSupported = 'serviceWorker' in navigator && 'PushManager' in window;
 
-let isSubscribed = false;
-let swRegistration = null;
+(async () => {
+  if (_isPushSupported) {
 
-navigator.serviceWorker.addEventListener('message', event => {
-  console.log('Got message from sw', event);
-});
+    console.debug('Service Worker and Push is supported');
+  
+    try {
+      
+      _swRegistration = await navigator.serviceWorker.register('sw.js');
+      console.debug('Service Worker is registered', _swRegistration);
 
-function urlB64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
-    .replace(/_/g, '/');
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        let payload = event.data;
+        let data = {
+          message: payload.body,
+          timeout: 2000
+        };
+        _snackbar.MaterialSnackbar.showSnackbar(data);
+      });
 
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
+      initializeUI();
 
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
+    } catch(err) {
+      console.err(err);
+    }
+   
+  } else {
+    console.warn('Push messaging is not supported');
+    _pushButton.textContent = 'Push Not Supported';
+    _pushButton.disabled = true;
   }
-  return outputArray;
-}
+})();
 
-if ('serviceWorker' in navigator && 'PushManager' in window) {
-  console.debug('Service Worker and Push is supported');
-
-  navigator.serviceWorker.register('sw.js')
-  .then(function(swReg) {
-    console.debug('Service Worker is registered', swReg);
-
-    swRegistration = swReg;
-    initializeUI();
-  })
-  .catch(function(error) {
-    console.error('Service Worker Error', error);
-  });
-} else {
-  console.warn('Push messaging is not supported');
-  pushButton.textContent = 'Push Not Supported';
-  pushButton.disabled = true;
-}
-
-function initializeUI() {
-  pushButton.addEventListener('click', function() {
-    pushButton.disabled = true;
-    if (isSubscribed) {
+async function initializeUI() {
+  _pushButton.addEventListener('click', function() {
+    _pushButton.disabled = true;
+    if (_isSubscribed) {
       unsubscribeUser();
     } else {
       subscribeUser();
     }
   });
 
-  sendButton.addEventListener('click', async function() {
-    sendButton.disabled = true;
+  _sendButton.addEventListener('click', async function() {
+    _sendButton.disabled = true;
     await fetch('/message', {
       method: 'post',
       headers: {
         'Content-type': 'application/json'
       },
       body: JSON.stringify({
-        subscription: txtRecipientSubscription.value,
-        title: txtTitle.value,
-        body: txtBody.value,
-        url: txtUrl.value
+        subscription: _txtRecipientSubscription.value,
+        title: _txtTitle.value,
+        body: _txtBody.value,
+        url: _txtUrl.value
       }),
     });
-    sendButton.disabled = false;
+    _sendButton.disabled = false;
   });
 
   // Set the initial subscription value
-  swRegistration.pushManager.getSubscription()
-  .then(function(subscription) {
-    isSubscribed = !(subscription === null);
+  let subscription = await _swRegistration.pushManager.getSubscription();
+  _isSubscribed = subscription !== null;
+  updateUI(subscription);
+  updateBtn();
 
-    updateUI(subscription);
+  _isSubscribed ? 
+  console.debug('User is subscribed.') : 
+  console.debug('User is not subscribed.');
 
-    if (isSubscribed) {
-      console.debug('User is subscribed.');
-    } else {
-      console.debug('User is not subscribed.');
-    }
-
-    updateBtn();
-  });
 }
 
 function updateBtn() {
   if (Notification.permission === 'denied') {
-    pushButton.textContent = 'Push Messaging Blocked.';
-    pushButton.disabled = true;
+    _pushButton.textContent = 'Push Messaging Blocked.';
+    _pushButton.disabled = true;
     updateUI(null);
     return;
   }
 
-  if (isSubscribed) {
-    pushButton.textContent = 'Disable Push Messaging';
+  if (_isSubscribed) {
+    _pushButton.textContent = 'Disable Push Messaging';
   } else {
-    pushButton.textContent = 'Enable Push Messaging';
+    _pushButton.textContent = 'Enable Push Messaging';
   }
 
-  pushButton.disabled = false;
+  _pushButton.disabled = false;
 }
 
-async function updateUI(subscription) {
+function updateUI(subscription) {
   const subscriptionJson = document.querySelector('.js-subscription-json');
-  const subscriptionDetails =
-    document.querySelector('.js-subscription-details');
+  const subscriptionDetails = document.querySelector('.js-subscription-details');
 
   if (subscription) {
     subscriptionJson.textContent = JSON.stringify(subscription, null, 2);
@@ -124,48 +113,53 @@ async function updateUI(subscription) {
 }
 
 async function subscribeUser() {
-  return swRegistration.pushManager.getSubscription()
-  .then(async function(subscription) {
-    isSubscribed = !(subscription === null);
-    if (!isSubscribed) {
-      const pubKeyRes = await fetch('/vapidPublicKey');
-      const publicKey = await pubKeyRes.text();
-      const applicationServerKey = urlB64ToUint8Array(publicKey);
-      return swRegistration.pushManager.subscribe({
+
+  let subscription = await _swRegistration.pushManager.getSubscription();
+  _isSubscribed = subscription !== null;
+  
+  if (!_isSubscribed) {
+    
+    const pubKeyRes = await fetch('/vapidPublicKey');
+    const publicKey = await pubKeyRes.text();
+    const applicationServerKey = urlB64ToUint8Array(publicKey);
+
+    try {
+      
+      subscription = await _swRegistration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey
-      })
-      .then(async function(subscription) {
-        
-        console.debug('User is subscribed.');
-
-        await fetch('/subscribe', {
-          method: 'post',
-          headers: {
-            'Content-type': 'application/json'
-          },
-          body: JSON.stringify({
-            subscription: subscription
-          })
-        });
-
-        updateUI(subscription);
-
-       
-        isSubscribed = true;
-        updateBtn();
-      })
-      .catch(function(err) {
-        console.error('Failed to subscribe the user: ', err);
-        updateBtn();
       });
-    } 
-  });
+
+      console.debug('User is subscribed.');
+
+      await fetch('/subscribe', {
+        method: 'post',
+        headers: {
+          'Content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          subscription: subscription
+        })
+      });
+
+      updateUI(subscription);     
+      _isSubscribed = true;
+      updateBtn();
+
+    } catch(err) {
+      console.error('Failed to subscribe the user: ', err);
+      updateBtn();
+    }
+
+  } 
+
 }
 
-function unsubscribeUser() {
-  swRegistration.pushManager.getSubscription()
-  .then(async function(subscription) {
+async function unsubscribeUser() {
+  
+  const subscription = await _swRegistration.pushManager.getSubscription();
+  
+  try {
     if (subscription) {
       
       await fetch('/unsubscribe', {
@@ -178,17 +172,33 @@ function unsubscribeUser() {
         })
       });
 
-
       return subscription.unsubscribe();
     }
-  })
-  .catch(function(error) {
-    console.error('Error unsubscribing', error);
-  })
-  .then(async function() {
+  } catch (err) {
+    console.error('Error unsubscribing', err);
+  } finally {
+    _isSubscribed = false;
     updateUI(null);
     console.debug('User is unsubscribed.');
-    isSubscribed = false;
     updateBtn();
-  });
+  }
+
+}
+
+function urlB64ToUint8Array(base64String) {
+  
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+
+  return outputArray;
+
 }

@@ -42,7 +42,7 @@
           <label class="mdl-textfield__label" for="txt-body">Body</label>
         </div>
         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label" style="width: 100%;">
-          <input class="mdl-textfield__input" type="text" id="txt-url">
+          <input class="mdl-textfield__input" type="url" id="txt-url" value="http://placekitten.com/1024/768"/>
           <label class="mdl-textfield__label" for="txt-url">URL</label>
         </div>
         <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--primary" 
@@ -52,7 +52,13 @@
         </button>
       </form>
     </section>
+   
   </main>
+
+  <div id="snackbar" class="mdl-js-snackbar mdl-snackbar">
+    <div class="mdl-snackbar__text"></div>
+    <button class="mdl-snackbar__action" type="button"></button>
+  </div>
 
   <script src="https://code.getmdl.io/1.2.1/material.min.js"></script>
   <script src="scripts/bowser.min.js"></script>

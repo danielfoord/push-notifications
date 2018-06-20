@@ -13,6 +13,7 @@ const dbName = 'push-notification';
 let pushDb;
 
 (async () => {
+  
   try {
     let mongoClient = await MongoClient.connect(mongoUrl);
     consola.success(`Connected successfully to mongodb on ${mongoUrl}`);
@@ -39,53 +40,52 @@ let pushDb;
     res.end(publicKey);
   });
   
-  app.post('/subscribe', (req, res) => {
+  app.post('/subscribe', async (req, res) => {
   
     consola.info('Got subscribe request');
     consola.debug(JSON.stringify(req.body, null, 2));
   
     const subscription = req.body.subscription;
   
-    // Validate subscription
+    // TODO: Validate subscription
   
-    pushDb.collection('subscription').insertOne(subscription, 
-    (err, r) => {
-      if(err) {
-        consola.error(err);
-        consola.debug(err);
-        res.status(500);
-      } else {
-        res.status(201);
-      }
-    });
-  
-    res.end();
+    try {
+      await pushDb.collection('subscription').insertOne(subscription);
+      res.status(201);
+    } catch (err) {
+      consola.error(err);
+      consola.debug(err);
+      res.status(500);
+    } finally {
+      res.end();
+    }
+
   });
   
-  app.post('/unsubscribe', (req, res) => {
+  app.post('/unsubscribe', async (req, res) => {
     consola.info('Got unsubscribe request');
     consola.debug(JSON.stringify(req.body, null, 2));
   
     const subscription = req.body.subscription;
   
-    // Validate subscription
-  
-    pushDb.collection('subscription').removeOne({ 
-      endpoint: subscription.endpoint 
-    }, (err, r) => {
-      if(err) {
-        consola.error(err);
-        consola.debug(err);
-        res.status(500);
-      } else {
-        res.status(200);
-      }
-    });
-  
-    res.end();
+    // TODO: Validate subscription
+    
+    try {
+      await pushDb.collection('subscription').removeOne({ 
+        endpoint: subscription.endpoint 
+      });
+      res.status(200);
+    } catch (err) {
+      consola.error(err);
+      consola.debug(err);
+      res.status(500);
+    } finally {
+      res.end();
+    }
+
   });
   
-  app.post('/message', (req, res) => {
+  app.post('/message', async (req, res) => {
     
     consola.info('Got message request');
     consola.debug(JSON.stringify(req.body, null, 2));
@@ -96,36 +96,33 @@ let pushDb;
     const url = req.body.url;
    
     consola.info(`Forwarding message to ${subscription.endpoint}`);
-    webpush.sendNotification(subscription, JSON.stringify({
-      title,
-      body,
-      url
-    }))
-    .then(() => {
+    
+    try {
+      await webpush.sendNotification(subscription, JSON.stringify({
+        title,
+        body,
+        url
+      }));
       consola.success('Message sent');
       res.status(201);
-      res.end();
-    })
-    .catch(err => {
+    } catch (err) {
+      
+      res.status(500);
+      
+      // Make sure that we have no reference to an unregistered subscription 
       if (err.statusCode === 410) {
         consola.warn('Trying to push to an unregistered subscription');
-        
-        pushDb.collection('subscription').removeOne({ 
+        await pushDb.collection('subscription').removeOne({ 
           endpoint: subscription.endpoint 
-        }, (err) => {
-          if (err) {
-            consola.error(err);
-            consola.debug(err);
-          }
         });
-  
       } else {
         consola.error(err);
         console.debug(err);
       }
-      res.status(500);
+
+    } finally {
       res.end();
-    });
+    }
   
   });
   
