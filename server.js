@@ -4,16 +4,32 @@ const bodyParser = require('body-parser');
 const app = express();
 const webpush = require('web-push');
 const mongoose = require('mongoose');
-
+const dotenv = require('dotenv');
 const Subscription = require('./server/schema/subscription');
 
 consola.level = 4;
 
-//mongodb://myAppUser:myAppPassword@mongo1:27017,mongo2:27017/myAppDatabase?replicaSet=rs0
-const mongoUrl = 'mongodb://localhost:37017/push-notificaton';
+dotenv.load();
 
-const publicKey = 'BEDv9fBpsXPKORdMXDBRSwPlWfBQaEcl0k1llKLfDBMUWRX66Yp-dOQbB84AfDBXHfugiq0fcRe74NC6McajhHo';
-const privateKey = 'IqKGZq_Jh2v-akSpafAp6c4p5N8GXOEXL7rFqtyMESs';
+if (!process.env.HTTP_PORT) {
+  throw new Error('HTTP_PORT environment variable needs to be defined')
+  process.exit(1);
+}
+
+if (!process.env.VAPID_PUBLIC_KEY) {
+  throw new Error('VAPID_PUBLIC_KEY environment variable needs to be defined')
+  process.exit(1);
+}
+
+if (!process.env.VAPID_PRIVATE_KEY) {
+  throw new Error('VAPID_PRIVATE_KEY environment variable needs to be defined')
+  process.exit(1);
+}
+
+if (!process.env.MONGODB_CONNSTRING) {
+  throw new Error('MONGODB_CONNSTRING environment variable needs to be defined')
+  process.exit(1);
+}
 
 async function openDbConnection(mongoUrl) {
   return new Promise((resolve, reject) => {
@@ -26,6 +42,9 @@ async function openDbConnection(mongoUrl) {
 (async () => {
   
   try {
+    //mongodb://myAppUser:myAppPassword@mongo1:27017,mongo2:27017/myAppDatabase?replicaSet=rs0
+    const mongoUrl = process.env.MONGODB_CONNSTRING;
+    consola.info(`Connecting to mongodb on ${mongoUrl}`);
     await openDbConnection(mongoUrl);
     consola.success(`Connected successfully to mongodb on ${mongoUrl}`);
   } catch(err) {
@@ -35,8 +54,8 @@ async function openDbConnection(mongoUrl) {
   
   webpush.setVapidDetails(
     'http://localhost:3000',
-    publicKey,
-    privateKey
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
   );
   
   app.use(express.static('app'));
@@ -52,21 +71,22 @@ async function openDbConnection(mongoUrl) {
   
     consola.info('Got subscribe request');
     consola.debug(JSON.stringify(req.body, null, 2));
-  
-    const payload = req.body.subscription;
 
-    const subscription = new Subscription({
-      endpoint: payload.endpoint,
-      expirationTime: payload.expirationTime,
-      keys: {
-        p256dh: payload.keys.p256dh,
-        auth: payload.keys.auth,
-      }
-    });
-  
-    // TODO: Validate subscription
-  
     try {
+      
+      const payload = req.body.subscription;
+
+      const subscription = new Subscription({
+        endpoint: payload.endpoint,
+        expirationTime: payload.expirationTime,
+        keys: {
+          p256dh: payload.keys.p256dh,
+          auth: payload.keys.auth,
+        }
+      });
+
+      // TODO: Validate subscription
+      
       await subscription.save();
       res.status(201);
     } catch (err) {
@@ -82,16 +102,19 @@ async function openDbConnection(mongoUrl) {
   app.post('/unsubscribe', async (req, res) => {
     consola.info('Got unsubscribe request');
     consola.debug(JSON.stringify(req.body, null, 2));
-  
-    const subscription = req.body.subscription;
-  
-    // TODO: Validate subscription
-    
+
     try {
+      
+      const subscription = req.body.subscription;
+      
+      // TODO: Validate subscription
+
       await Subscription.deleteOne({ 
         endpoint: subscription.endpoint 
       });
+
       res.status(200);
+
     } catch (err) {
       consola.error(err);
       consola.debug(err);
@@ -107,21 +130,25 @@ async function openDbConnection(mongoUrl) {
     consola.info('Got message request');
     consola.debug(JSON.stringify(req.body, null, 2));
   
-    const subscription = JSON.parse(req.body.subscription);
-    const title = req.body.title;
-    const body = req.body.body;
-    const url = req.body.url;
-   
-    consola.info(`Forwarding message to ${subscription.endpoint}`);
-    
     try {
+
+      const subscription = JSON.parse(req.body.subscription);
+      const title = req.body.title;
+      const body = req.body.body;
+      const url = req.body.url;
+     
+      consola.info(`Forwarding message to ${subscription.endpoint}`);
+
       await webpush.sendNotification(subscription, JSON.stringify({
         title,
         body,
         url
       }));
+      
       consola.success('Message sent');
+      
       res.status(201);
+
     } catch (err) {
       
       res.status(500);
@@ -144,6 +171,6 @@ async function openDbConnection(mongoUrl) {
   
   });
   
-  app.listen(3000, () => consola.start('Web push app server listening on port 3000'));
+  app.listen(process.env.HTTP_PORT, () => consola.start('Web push app server listening on port 3000'));
   
 })();

@@ -14,3 +14,4 @@ src/css/styles.min.css
 dist
 .tmp
 npm-debug.log
+.env

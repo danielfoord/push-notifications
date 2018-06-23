@@ -1,29 +1,16 @@
 {
   "name": "push-notifications",
   "version": "1.0.0",
-  "description": "Push notifications codelab.",
+  "description": "Push notifications",
   "scripts": {
-    "lint": "eslint \".\"",
-    "test": "npm run lint"
+    "start": "node server"
   },
-  "devDependencies": {
-    "eslint": "^3.8.1",
-    "eslint-config-google": "^0.7.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/GoogleChrome/push-notifications.git"
-  },
-  "license": "Apache 2",
-  "bugs": {
-    "url": "https://github.com/GoogleChrome/push-notifications/issues"
-  },
-  "homepage": "https://github.com/GoogleChrome/push-notifications#readme",
   "dependencies": {
     "base64url": "^3.0.0",
     "body-parser": "^1.18.3",
     "bowser": "^1.9.3",
     "consola": "^1.4.1",
+    "dotenv": "^6.0.0",
     "express": "^4.16.3",
     "mongodb": "^3.0.10",
     "mongoose": "^5.1.6",

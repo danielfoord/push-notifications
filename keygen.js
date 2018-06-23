@@ -4,7 +4,13 @@ const base64url = require('base64url');
 const ecdh = crypto.createECDH('prime256v1');
 ecdh.generateKeys();
 
-console.log(`Public key URL: ${base64url.fromBase64(ecdh.getPublicKey('base64'))}`);
-console.log(`Public key: ${ecdh.getPublicKey('base64')}`);
-console.log(`\nPrivate key URL: ${base64url.fromBase64(ecdh.getPrivateKey('base64'))}`);
-console.log(`Private key: ${ecdh.getPrivateKey('base64')}`);
+const pubKey = ecdh.getPublicKey('base64');
+const priKey = ecdh.getPrivateKey('base64');
+
+const pubKeyUrl = base64url.fromBase64(pubKey);
+const priKeyUrl = base64url.fromBase64(priKey);
+
+console.log(`Public key URL: ${pubKeyUrl}`);
+console.log(`Public key: ${pubKey}`);
+console.log(`\nPrivate key URL: ${priKeyUrl}`);
+console.log(`Private key: ${priKey}`);

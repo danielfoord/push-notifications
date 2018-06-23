@@ -8,9 +8,10 @@ const _txtBody = document.querySelector('#txt-body');
 const _txtUrl = document.querySelector('#txt-url');
 const _snackbar = document.querySelector('#snackbar');
 
+const _isPushSupported = 'serviceWorker' in navigator && 'PushManager' in window;
+
 let _isSubscribed = false;
 let _swRegistration = null;
-let _isPushSupported = 'serviceWorker' in navigator && 'PushManager' in window;
 
 class PushApi {
 
