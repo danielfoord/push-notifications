@@ -64,7 +64,7 @@ async function openDbConnection(mongoUrl) {
   
   app.get('/vapidPublicKey', (_req, res) => {
     consola.info('Got public key request');
-    res.end(publicKey);
+    res.end(process.env.VAPID_PUBLIC_KEY);
   });
   
   app.post('/subscribe', async (req, res) => {
