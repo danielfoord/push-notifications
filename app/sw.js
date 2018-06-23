@@ -58,3 +58,15 @@ self.addEventListener('notificationclick', async (event) => {
   console.debug(event.notification);
   await clients.openWindow(event.notification.data);
 });
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  let oldEvt = event.oldSubscription;
+  let newEvt = event.newSubscription;
+  
+  // TODO: Remove old subscription, and add new one to DB
+
+  console.debug(oldEvt, newEvt);
+});
+
+// TODO see of there is a event for permission state change and remove a subscription 
+// if the permission state has been set to "denied".

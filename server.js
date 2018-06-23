@@ -3,27 +3,35 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 const webpush = require('web-push');
-const MongoClient = require('mongodb').MongoClient;
+const mongoose = require('mongoose');
+
+const Subscription = require('./server/schema/subscription');
 
 consola.level = 4;
 
 //mongodb://myAppUser:myAppPassword@mongo1:27017,mongo2:27017/myAppDatabase?replicaSet=rs0
-const mongoUrl = 'mongodb://localhost:37017';
-const dbName = 'push-notification';
-let pushDb;
+const mongoUrl = 'mongodb://localhost:37017/push-notificaton';
+
+const publicKey = 'BEDv9fBpsXPKORdMXDBRSwPlWfBQaEcl0k1llKLfDBMUWRX66Yp-dOQbB84AfDBXHfugiq0fcRe74NC6McajhHo';
+const privateKey = 'IqKGZq_Jh2v-akSpafAp6c4p5N8GXOEXL7rFqtyMESs';
+
+async function openDbConnection(mongoUrl) {
+  return new Promise((resolve, reject) => {
+    mongoose.connect(mongoUrl).catch(reject);
+    let db = mongoose.connection;
+    db.once('open', () => resolve(db));
+  });
+}
 
 (async () => {
   
   try {
-    let mongoClient = await MongoClient.connect(mongoUrl);
+    await openDbConnection(mongoUrl);
     consola.success(`Connected successfully to mongodb on ${mongoUrl}`);
-    pushDb = mongoClient.db(dbName);
-  } catch (err) {
+  } catch(err) {
     consola.error(err);
+    process.exit(1);
   }
-  
-  const publicKey = 'BEDv9fBpsXPKORdMXDBRSwPlWfBQaEcl0k1llKLfDBMUWRX66Yp-dOQbB84AfDBXHfugiq0fcRe74NC6McajhHo';
-  const privateKey = 'IqKGZq_Jh2v-akSpafAp6c4p5N8GXOEXL7rFqtyMESs';
   
   webpush.setVapidDetails(
     'http://localhost:3000',
@@ -45,12 +53,21 @@ let pushDb;
     consola.info('Got subscribe request');
     consola.debug(JSON.stringify(req.body, null, 2));
   
-    const subscription = req.body.subscription;
+    const payload = req.body.subscription;
+
+    const subscription = new Subscription({
+      endpoint: payload.endpoint,
+      expirationTime: payload.expirationTime,
+      keys: {
+        p256dh: payload.keys.p256dh,
+        auth: payload.keys.auth,
+      }
+    });
   
     // TODO: Validate subscription
   
     try {
-      await pushDb.collection('subscription').insertOne(subscription);
+      await subscription.save();
       res.status(201);
     } catch (err) {
       consola.error(err);
@@ -71,7 +88,7 @@ let pushDb;
     // TODO: Validate subscription
     
     try {
-      await pushDb.collection('subscription').removeOne({ 
+      await Subscription.deleteOne({ 
         endpoint: subscription.endpoint 
       });
       res.status(200);
@@ -113,7 +130,7 @@ let pushDb;
       if (err.statusCode === 410) {
         res.status(400);
         consola.warn('Trying to push to an unregistered subscription');
-        await pushDb.collection('subscription').removeOne({ 
+        await Subscription.deleteOne({ 
           endpoint: subscription.endpoint 
         });
       } else {
@@ -128,4 +145,5 @@ let pushDb;
   });
   
   app.listen(3000, () => consola.start('Web push app server listening on port 3000'));
+  
 })();
