@@ -59,7 +59,7 @@ class PushApi {
 const _pushApi = new PushApi();
 
 (async () => {
-  
+
   if (_isPushSupported) {
 
     console.debug('Service Worker and Push is supported');
@@ -92,12 +92,12 @@ const _pushApi = new PushApi();
 })();
 
 async function initializeUI() {
-  _pushButton.addEventListener('click', function() {
+  _pushButton.addEventListener('click', async function() {
     _pushButton.disabled = true;
     if (_isSubscribed) {
-      unsubscribeUser();
+      await unsubscribeUser();
     } else {
-      subscribeUser();
+      await subscribeUser();
     }
   });
 

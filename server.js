@@ -27,7 +27,7 @@ if (!process.env.MONGODB_CONNSTRING) {
   throw new Error('MONGODB_CONNSTRING environment variable needs to be defined');
 }
 
-async function openDbConnection(mongoUrl) {
+function openDbConnection(mongoUrl) {
   return new Promise((resolve, reject) => {
     mongoose.connect(mongoUrl).catch(reject);
     let db = mongoose.connection;
