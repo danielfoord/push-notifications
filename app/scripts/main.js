@@ -59,6 +59,7 @@ class PushApi {
 const _pushApi = new PushApi();
 
 (async () => {
+  
   if (_isPushSupported) {
 
     console.debug('Service Worker and Push is supported');

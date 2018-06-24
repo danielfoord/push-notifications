@@ -12,23 +12,19 @@ consola.level = 4;
 dotenv.load();
 
 if (!process.env.HTTP_PORT) {
-  throw new Error('HTTP_PORT environment variable needs to be defined')
-  process.exit(1);
+  throw new Error('HTTP_PORT environment variable needs to be defined');
 }
 
 if (!process.env.VAPID_PUBLIC_KEY) {
-  throw new Error('VAPID_PUBLIC_KEY environment variable needs to be defined')
-  process.exit(1);
+  throw new Error('VAPID_PUBLIC_KEY environment variable needs to be defined');
 }
 
 if (!process.env.VAPID_PRIVATE_KEY) {
-  throw new Error('VAPID_PRIVATE_KEY environment variable needs to be defined')
-  process.exit(1);
+  throw new Error('VAPID_PRIVATE_KEY environment variable needs to be defined');
 }
 
 if (!process.env.MONGODB_CONNSTRING) {
-  throw new Error('MONGODB_CONNSTRING environment variable needs to be defined')
-  process.exit(1);
+  throw new Error('MONGODB_CONNSTRING environment variable needs to be defined');
 }
 
 async function openDbConnection(mongoUrl) {

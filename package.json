@@ -8,7 +8,6 @@
   "dependencies": {
     "base64url": "^3.0.0",
     "body-parser": "^1.18.3",
-    "bowser": "^1.9.3",
     "consola": "^1.4.1",
     "dotenv": "^6.0.0",
     "express": "^4.16.3",
