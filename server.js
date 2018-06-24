@@ -130,13 +130,15 @@ async function openDbConnection(mongoUrl) {
     consola.info('Got message request');
     consola.debug(JSON.stringify(req.body, null, 2));
   
+    const subscription = JSON.parse(req.body.subscription);
+    const title = req.body.title;
+    const body = req.body.body;
+    const url = req.body.url;
+
+    // TODO: Validate subscription
+
     try {
 
-      const subscription = JSON.parse(req.body.subscription);
-      const title = req.body.title;
-      const body = req.body.body;
-      const url = req.body.url;
-     
       consola.info(`Forwarding message to ${subscription.endpoint}`);
 
       await webpush.sendNotification(subscription, JSON.stringify({
@@ -149,26 +151,29 @@ async function openDbConnection(mongoUrl) {
       
       res.status(201);
 
+      res.end();
+
     } catch (err) {
       
-      res.status(500);
-      
-      // Make sure that we have no reference to an unregistered subscription 
-      if (err.statusCode === 410) {
-        res.status(400);
-        consola.warn('Trying to push to an unregistered subscription');
-        await Subscription.deleteOne({ 
-          endpoint: subscription.endpoint 
-        });
-      } else {
-        consola.error(err);
-        console.debug(err);
+      switch(err.statusCode) {
+        case 410:
+          res.status(400);
+          consola.warn('Trying to push to an unregistered subscription');
+          await Subscription.deleteOne({ 
+            endpoint: subscription.endpoint 
+          });
+          break;
+        default: 
+          res.status(500);
+          consola.error(err);
+          console.debug(err);
+          break;
       }
 
-    } finally {
-      res.end();
+      res.end(err.toString());
+   
     }
-  
+
   });
   
   app.listen(process.env.HTTP_PORT, () => consola.start('Web push app server listening on port 3000'));
