@@ -50,5 +50,4 @@ services:
       - /wait-for-it.sh
       - mongo:27017
       - --
-      - npm
-      - start
+      - ./scripts/docker-entrypoint.sh
