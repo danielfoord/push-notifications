@@ -5,7 +5,9 @@ services:
   mongo:
     image: mongo
     ports:
-      - 27017:27017 
+      - 27017:27017
+    volumes:
+      - ./mongo:/data/db
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
@@ -51,3 +53,6 @@ services:
       - mongo:27017
       - --
       - ./scripts/docker-entrypoint.sh
+
+volumes:
+  mongo:

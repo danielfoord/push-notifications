@@ -36,16 +36,14 @@ self.addEventListener('push', async (event) => {
     clients = await self.clients.matchAll(); 
   }
 
-  console.debug(clients, clients.length);
-
-  let forwardIfFocused = (client, payload) => {
+  const forwardIfFocused = (client, payload) => {
     if(client.focused) {
       client.postMessage(payload);
     }
   };
 
   clients.forEach(client => forwardIfFocused(client, payload));
-  let noneFocused = !clients.find(client => client.focused);
+  const noneFocused = !clients.find(client => client.focused);
   if(noneFocused) {
     await self.registration.showNotification(title, options);
   }
@@ -59,8 +57,8 @@ self.addEventListener('notificationclick', async (event) => {
 });
 
 self.addEventListener('pushsubscriptionchange', (event) => {
-  let oldEvt = event.oldSubscription;
-  let newEvt = event.newSubscription;
+  const oldEvt = event.oldSubscription;
+  const newEvt = event.newSubscription;
   
   // TODO: Remove old subscription, and add new one to DB
 

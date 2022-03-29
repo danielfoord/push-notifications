@@ -38,7 +38,7 @@ const openDbConnection = (mongoUrl) => {
 (async () => {
   
   try {
-    //mongodb://myAppUser:myAppPassword@mongo1:27017,mongo2:27017/myAppDatabase?replicaSet=rs0
+    //mongodb://myAppUser:myAppPassword@mongo1:27017,mongo2:27017/myAppDatabase?replicaSet=rs0&authSource=admin
     const mongoUrl = process.env.MONGODB_CONNSTRING;
     consola.info(`Connecting to mongodb on ${mongoUrl}`);
     await openDbConnection(mongoUrl);
@@ -126,8 +126,6 @@ const openDbConnection = (mongoUrl) => {
     consola.info('Got message request');
     consola.debug(JSON.stringify(req.body, null, 2));
     
-    console.debug(req.body);
-
     const subscription = JSON.parse(req.body.subscription);
     const title = req.body.title;
     const body = req.body.body;
