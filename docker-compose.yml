@@ -5,10 +5,11 @@ services:
   mongo:
     image: mongo
     ports:
-      - 27017:27017
+      - 27017:27017 
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: push-notifications
 
   mongo-express:
     image: mongo-express
@@ -30,3 +31,23 @@ services:
       - mongo:27017
       - --
       - /docker-entrypoint.sh
+
+  web:
+    build: .
+    ports:
+      - 3000:3000
+    depends_on:
+      - mongo
+    volumes:
+      - type: bind
+        source: ./scripts/wait-for-it.sh
+        target: /wait-for-it.sh
+    environment:
+      MONGODB_CONNSTRING: mongodb://root:example@mongo:27017/push-notifications?authSource=admin
+    entrypoint:
+      - /bin/bash
+      - /wait-for-it.sh
+      - mongo:27017
+      - --
+      - npm
+      - start
