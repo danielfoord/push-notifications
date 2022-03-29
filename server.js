@@ -49,7 +49,7 @@ function openDbConnection(mongoUrl) {
   }
   
   webpush.setVapidDetails(
-    'http://localhost:3000',
+    `http://localhost:${process.env.HTTP_PORT}`,
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
@@ -125,7 +125,9 @@ function openDbConnection(mongoUrl) {
     
     consola.info('Got message request');
     consola.debug(JSON.stringify(req.body, null, 2));
-  
+    
+    console.debug(req.body);
+
     const subscription = JSON.parse(req.body.subscription);
     const title = req.body.title;
     const body = req.body.body;

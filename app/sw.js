@@ -49,7 +49,6 @@ self.addEventListener('push', async (event) => {
   if(noneFocused) {
     await self.registration.showNotification(title, options);
   }
-
 });
 
 self.addEventListener('notificationclick', async (event) => {
